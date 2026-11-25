@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>我的捏捏游戏</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="game-container">
+        <div id="squishy" class="squishy">
+            <div class="face">
+                <div class="eye"></div>
+                <div class="eye"></div>
+                <div class="mouth"></div>
+            </div>
+        </div>
+    </div>
+    <script>
+        // 游戏逻辑：检测触摸和鼠标拖动
+        const squishy = document.getElementById('squishy');
+        
+        function squeeze(e) {
+            // 阻止手机屏幕滑动
+            if(e.cancelable) e.preventDefault(); 
+            
+            // 计算捏的力度和变形程度
+            let intensity = 1.5; 
+            squishy.style.transform = `scale(1.2, 0.7) translateY(10px)`;
+            squishy.style.borderRadius = '50% 50% 40% 40% / 60% 60% 40% 40%';
+        }
+
+        function release() {
+            squishy.style.transform = `scale(1, 1) translateY(0)`;
+            squishy.style.borderRadius = '50%';
+        }
+
+        // 绑定手机触摸和电脑鼠标事件
+        squishy.addEventListener('pointerdown', squeeze);
+        window.addEventListener('pointerup', release);
+        window.addEventListener('pointercancel', release);
+    </script>
+</body>
+  </html>
