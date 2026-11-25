@@ -1,116 +1,92 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>超解压高级捏捏</title>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
-    <!-- 控制面板 -->
-    <div class="controls">
-        <label>颜色: <input type="color" id="colorPicker" value="#ff9a9e"></label>
-        <label>大小: <input type="range" id="sizeSlider" min="100" max="350" value="200"></label>
-        <label>形状: 
-            <select id="shapeSelect">
-                <option value="50%">圆形</option>
-                <option value="30%">圆角方块</option>
-                <option value="10px">方形</option>
-                <option value="50% 50% 50% 50% / 60% 60% 40% 40%">水滴形</option>
-            </select>
-        </label>
-    </div>
+/* 基础设置 */
+body {
+    margin: 0;
+    padding: 0;
+    background-color: #f4f4f9;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    overflow: hidden;
+    font-family: sans-serif;
+}
 
-    <!-- 游戏区域 -->
-    <div class="game-container">
-        <div id="squishy" class="squishy">
-            <div class="face">
-                <div class="eye"></div>
-                <div class="eye"></div>
-                <div class="mouth"></div>
-            </div>
-        </div>
-    </div>
+/* 顶部控制面板样式 */
+.controls {
+    position: absolute;
+    top: 20px;
+    background: white;
+    padding: 15px;
+    border-radius: 15px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    font-size: 14px;
+    z-index: 10;
+}
 
-    <script>
-        const squishy = document.getElementById('squishy');
-        const colorPicker = document.getElementById('colorPicker');
-        const sizeSlider = document.getElementById('sizeSlider');
-        const shapeSelect = document.getElementById('shapeSelect');
-        
-        // 音频上下文（用于生成音效）
-        let audioCtx;
-        
-        // 初始化控制面板功能
-        colorPicker.addEventListener('input', (e) => {
-            squishy.style.backgroundColor = e.target.value;
-            squishy.style.backgroundImage = 'none'; // 取消渐变色，使用纯色
-        });
+.controls label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    color: #333;
+}
 
-        sizeSlider.addEventListener('input', (e) => {
-            squishy.style.width = e.target.value + 'px';
-            squishy.style.height = e.target.value + 'px';
-        });
+/* 游戏区域 */
+.game-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 150px; /* 给控制面板留出空间 */
+}
 
-        shapeSelect.addEventListener('change', (e) => {
-            squishy.style.borderRadius = e.target.value;
-        });
+/* 捏捏本体 */
+.squishy {
+    width: 200px;
+    height: 200px;
+    background-color: #ff9a9e; /* 默认纯色，可通过控制面板修改 */
+    border-radius: 50%;
+    box-shadow: inset -15px -15px 30px rgba(255,255,255,0.6), 
+                inset 10px 10px 20px rgba(0,0,0,0.1),
+                0 15px 25px rgba(0,0,0,0.15);
+                
+    /* 手感核心：给 transform 加上弹簧一样的回弹曲线 */
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), 
+                border-radius 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+                width 0.2s, height 0.2s, background-color 0.2s;
+    cursor: pointer;
+    touch-action: none;
+    position: relative;
+}
 
-        // 音效生成函数：每次触发产生不同的音调
-        function playSquishSound() {
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
-            const osc = audioCtx.createOscillator();
-            const gainNode = audioCtx.createGain();
-            
-            osc.connect(gainNode);
-            gainNode.connect(audioCtx.destination);
-            
-            // 随机频率，让声音不单一
-            const randomFreq = 300 + Math.random() * 400; 
-            osc.type = Math.random() > 0.5 ? 'sine' : 'triangle';
-            
-            osc.frequency.setValueAtTime(randomFreq, audioCtx.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(randomFreq * 0.5, audioCtx.currentTime + 0.1);
-            
-            // 音量和衰减
-            gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
-            
-            osc.start();
-            osc.stop(audioCtx.currentTime + 0.1);
-        }
+/* 小脸 */
+.face {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    gap: 30px;
+}
 
-        // 捏的手感逻辑
-        function squeeze(e) {
-            if(e.cancelable) e.preventDefault(); 
-            
-            playSquishSound(); // 播放音效
-            
-            // 获取当前设置的基础圆角，用于动态变形
-            const baseRadius = shapeSelect.value;
-            
-            // 形变：稍微放大并压扁，增加拉扯感
-            squishy.style.transform = `scale(1.1, 0.85) translateY(5px)`;
-            
-            // 动态挤压边框（把圆角压得更扁）
-            if (baseRadius === '50%') {
-                squishy.style.borderRadius = '50% 50% 40% 40% / 60% 60% 40% 40%';
-            } else {
-                squishy.style.transform += ` scaleX(1.05)`;
-            }
-        }
+.eye {
+    width: 15px;
+    height: 15px;
+    background-color: #333;
+    border-radius: 50%;
+    transition: transform 0.1s;
+}
 
-        function release() {
-            squishy.style.transform = `scale(1, 1) translateY(0)`;
-            // 恢复用户选择的形状
-            squishy.style.borderRadius = shapeSelect.value;
-        }
-
-        squishy.addEventListener('pointerdown', squeeze);
-        window.addEventListener('pointerup', release);
-        window.addEventListener('pointercancel', release);
-    </script>
-</body>
-</html>
+.mouth {
+    position: absolute;
+    bottom: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 30px;
+    height: 15px;
+    border-bottom: 4px solid #333;
+    border-radius: 0 0 50px 50px;
+}
